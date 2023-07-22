@@ -1,6 +1,5 @@
 //
 //  EngineeringMode.swift
-//  Timebound
 //
 //  Created by Ananay Arora on 6/29/23.
 //
@@ -13,25 +12,27 @@ public struct EngineeringMode: View {
     
     @State private var viewSelection = 0
     @State var defaultViews: [AnyView] = [
-//        AnyView(EngineeringModeMainView()),
         AnyView(UserDefaultsView()),
         AnyView(NotificationsView()),
         AnyView(PermissionsView()),
         AnyView(NetworkView()),
     ]
     @State var defaultViewTitles: [String] = [
-//        "Main",
         "User Defaults",
         "Notifications",
         "Permissions",
         "Network"
     ]
     
-    @State var customViews: [AnyView]
+    @State var customViews: [AnyView] = []
     @State var customViewTitles: [String]
     @State var showCustomViewsFirst: Bool = true
     
     public init(customViews: [AnyView] = [], customViewTitles: [String] = [], showCustomViewsFirst: Bool = true) {
+        
+        guard customViews.count == customViewTitles.count else {
+            fatalError("Arguments `customViews` and `customViewTitles` must have the same number of array items. Please pass in a title for each Custom View!")
+        }
         
         self.customViews = customViews
         self.customViewTitles = customViewTitles
@@ -76,7 +77,7 @@ public struct EngineeringMode: View {
                 .padding(.top, 25)
                 .padding(.trailing, 10)
             }
-        
+            
             
             
             if (showCustomViewsFirst == false) {

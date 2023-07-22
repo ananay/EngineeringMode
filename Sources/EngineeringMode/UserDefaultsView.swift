@@ -1,7 +1,6 @@
 //
 //  UserDefaultsView.swift
 //
-//
 //  Created by Ananay Arora on 6/29/23.
 //
 
@@ -26,6 +25,9 @@ struct UserDefaultsView: View {
         }
     }
     
+    /**
+     * Fetches the user defaults and adds it to the State array.
+     */
     func fetchUserDefaultsData() {
         userDefaultsData = []
         for (key, value) in UserDefaults.standard.dictionaryRepresentation() {

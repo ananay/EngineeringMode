@@ -1,6 +1,5 @@
 //
 //  NetworkView.swift
-//  Timebound
 //
 //  Created by Ananay Arora on 6/29/23.
 //
@@ -73,7 +72,7 @@ struct NetworkView: View {
         let logEntry = "\(timestamp) \(text)"
         networkLog.insert(logEntry, at: 0)
     }
-
+    
     
     func fetchIPAddress() {
         let task = URLSession.shared.dataTask(with: URL(string: "https://api.ipify.org/")!) { data, response, error in

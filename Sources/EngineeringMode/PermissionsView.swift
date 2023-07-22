@@ -1,3 +1,9 @@
+//
+//  PermissionsView.swift
+//
+//  Created by Ananay Arora on 6/29/23.
+//
+
 import SwiftUI
 import AVFoundation
 import Photos
@@ -31,7 +37,7 @@ struct PermissionsView: View {
         PermissionStatus(title: "Reminders", status: EKEventStore.authorizationStatus(for: .reminder).localizedStatus),
         PermissionStatus(title: "Motion & Fitness", status: CMMotionActivityManager.authorizationStatus().localizedStatus),
         PermissionStatus(title: "Health", status: HKHealthStore.isHealthDataAvailable() ? HKHealthStore().authorizationStatus(for: .activitySummaryType()).localizedStatus : "Unavailable"),
-//        PermissionStatus(title: "HomeKit", status: HMHomeManager().authorizationStatus.localizedStatus),
+        //        PermissionStatus(title: "HomeKit", status: HMHomeManager().authorizationStatus.localizedStatus),
         PermissionStatus(title: "Bluetooth", status: CBPeripheralManager.authorizationStatus().localizedStatus),
         PermissionStatus(title: "Cellular Data", status: CTCellularData().restrictedState.localizedStatus),
         PermissionStatus(title: "Push Notifications", status: "N/A"),
@@ -43,7 +49,7 @@ struct PermissionsView: View {
         PermissionStatus(title: "Apple Music", status: "N/A"),
         PermissionStatus(title: "Home & Lock Screen Widgets", status: "N/A")
     ]
-
+    
     var body: some View {
         List(permissions) { permission in
             HStack {
