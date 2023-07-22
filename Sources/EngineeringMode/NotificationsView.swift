@@ -13,12 +13,16 @@ import SwiftUI
 func triggerDescriptionFormatter(_ trigger: UNNotificationTrigger) -> String {
     if let calendarTrigger = trigger as? UNCalendarNotificationTrigger {
         let date = calendarTrigger.nextTriggerDate()
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        return "Calendar Trigger: \(formatter.string(from: date ?? Date()))"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short // Use .full instead of .short for additional information
+        dateFormatter.timeStyle = .short
+        return "Calendar Trigger: \(dateFormatter.string(from: date ?? Date()))"
     } else if let intervalTrigger = trigger as? UNTimeIntervalNotificationTrigger {
-        return "Time Interval Trigger: \(intervalTrigger.timeInterval) seconds"
+        let timeFormatter = DateComponentsFormatter()
+        timeFormatter.unitsStyle = .abbreviated
+        timeFormatter.zeroFormattingBehavior = .dropAll
+        timeFormatter.allowedUnits = [.hour, .minute, .second]
+        return "Time Interval Trigger: \(timeFormatter.string(from: intervalTrigger.timeInterval ?? 0.0))"
     } else if let locationTrigger = trigger as? UNLocationNotificationTrigger {
         return "Location Trigger"
     } else {
