@@ -6,103 +6,104 @@
 
 import SwiftUI
 
-
 @available(iOS 15.0, *)
 public struct EngineeringMode: View {
-    
-    @State private var viewSelection = 0
-    @State var defaultViews: [AnyView] = [
-        AnyView(UserDefaultsView()),
-        AnyView(NotificationsView()),
-        AnyView(PermissionsView()),
-        AnyView(NetworkView()),
-    ]
-    @State var defaultViewTitles: [String] = [
-        "User Defaults",
-        "Notifications",
-        "Permissions",
-        "Network"
-    ]
-    
-    @State var customViews: [AnyView] = []
-    @State var customViewTitles: [String]
-    @State var showCustomViewsFirst: Bool = true
-    
-    public init(customViews: [AnyView] = [], customViewTitles: [String] = [], showCustomViewsFirst: Bool = true) {
-        
-        guard customViews.count == customViewTitles.count else {
-            fatalError("Arguments `customViews` and `customViewTitles` must have the same number of array items. Please pass in a title for each Custom View!")
-        }
-        
-        self.customViews = customViews
-        self.customViewTitles = customViewTitles
-        self.showCustomViewsFirst = showCustomViewsFirst
-        
+
+  @State private var viewSelection = 0
+  @State var defaultViews: [AnyView] = [
+    AnyView(UserDefaultsView()),
+    AnyView(NotificationsView()),
+    AnyView(PermissionsView()),
+    AnyView(NetworkView()),
+    AnyView(MetricsView())
+  ]
+  @State var defaultViewTitles: [String] = [
+    "User Defaults",
+    "Notifications",
+    "Permissions",
+    "Network",
+    "MetricKit"
+  ]
+
+  @State var customViews: [AnyView] = []
+  @State var customViewTitles: [String]
+  @State var showCustomViewsFirst: Bool = true
+
+  public init(
+    customViews: [AnyView] = [], customViewTitles: [String] = [], showCustomViewsFirst: Bool = true
+  ) {
+
+    guard customViews.count == customViewTitles.count else {
+      fatalError(
+        "Arguments `customViews` and `customViewTitles` must have the same number of array items. Please pass in a title for each Custom View!"
+      )
     }
-    
-    public var body: some View {
-        
-        VStack(alignment: .leading) {
-            HStack {
-                Text("🛠️ Engineering Mode")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .padding(.top, 25)
-                    .padding(.leading, 25)
-                Spacer()
-                Picker("View", selection: $viewSelection) {
-                    if (showCustomViewsFirst == true) {
-                        ForEach(0..<customViewTitles.count) { index in
-                            Text(customViewTitles[index])
-                                .tag(index)
-                        }
-                        ForEach(0..<defaultViewTitles.count) { index in
-                            Text(defaultViewTitles[index])
-                                .tag(index + customViewTitles.count)
-                        }
-                    }
-                    
-                    if (showCustomViewsFirst == false) {
-                        ForEach(0..<defaultViewTitles.count) { index in
-                            Text(defaultViewTitles[index])
-                                .tag(index)
-                        }
-                        ForEach(0..<customViewTitles.count) { index in
-                            Text(customViewTitles[index])
-                                .tag(index + defaultViewTitles.count)
-                        }
-                    }
-                }
-                .pickerStyle(.automatic)
-                .padding(.top, 25)
-                .padding(.trailing, 10)
+
+    self.customViews = customViews
+    self.customViewTitles = customViewTitles
+    self.showCustomViewsFirst = showCustomViewsFirst
+
+  }
+
+  public var body: some View {
+
+    VStack(alignment: .leading) {
+      HStack {
+        Text("🛠️ Engineering Mode")
+          .font(.headline)
+          .fontWeight(.bold)
+          .padding(.top, 25)
+          .padding(.leading, 25)
+        Spacer()
+        Picker("View", selection: $viewSelection) {
+          if showCustomViewsFirst {
+            ForEach(Array(customViewTitles.enumerated()), id: \.offset) { index, title in
+              Text(title)
+                .tag(index)
             }
-            
-            
-            
-            if (showCustomViewsFirst == false) {
-                if (viewSelection < defaultViewTitles.count) {
-                    defaultViews[viewSelection]
-                } else {
-                    customViews[viewSelection - defaultViewTitles.count]
-                }
-            } else {
-                if (viewSelection < customViewTitles.count) {
-                    customViews[viewSelection]
-                } else {
-                    defaultViews[viewSelection - customViewTitles.count]
-                }
+            ForEach(Array(defaultViewTitles.enumerated()), id: \.offset) { index, title in
+              Text(title)
+                .tag(index + customViewTitles.count)
             }
-            
+          } else {
+            ForEach(Array(defaultViewTitles.enumerated()), id: \.offset) { index, title in
+              Text(title)
+                .tag(index)
+            }
+            ForEach(Array(customViewTitles.enumerated()), id: \.offset) { index, title in
+              Text(title)
+                .tag(index + defaultViewTitles.count)
+            }
+          }
         }
-        
+        .pickerStyle(.automatic)
+        .padding(.top, 25)
+        .padding(.trailing, 10)
+      }
+
+      if showCustomViewsFirst == false {
+        if viewSelection < defaultViewTitles.count {
+          defaultViews[viewSelection]
+        } else {
+          customViews[viewSelection - defaultViewTitles.count]
+        }
+      } else {
+        if viewSelection < customViewTitles.count {
+          customViews[viewSelection]
+        } else {
+          defaultViews[viewSelection - customViewTitles.count]
+        }
+      }
+
     }
+
+  }
 }
 
 @available(iOS 15, *)
 struct EngineeringMode_Previews: PreviewProvider {
-    @available(iOS 15.0, *)
-    static var previews: some View {
-        EngineeringMode()
-    }
+  @available(iOS 15.0, *)
+  static var previews: some View {
+    EngineeringMode()
+  }
 }

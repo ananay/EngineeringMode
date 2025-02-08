@@ -6,51 +6,50 @@
 
 import SwiftUI
 
-/**
- * Formats the Trigger Description
- */
+/// Formats the Trigger Description
 func triggerDescriptionFormatter(_ trigger: UNNotificationTrigger) -> String {
     if let calendarTrigger = trigger as? UNCalendarNotificationTrigger {
         let date = calendarTrigger.nextTriggerDate()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .short // Use .full instead of .short for additional information
+        dateFormatter.dateStyle = .short  // Use .full instead of .short for additional information
         dateFormatter.timeStyle = .short
         return "Calendar Trigger: \(dateFormatter.string(from: date ?? Date()))"
-    } else if let intervalTrigger = trigger as? UNTimeIntervalNotificationTrigger {
+    } else if let intervalTrigger = trigger
+        as? UNTimeIntervalNotificationTrigger
+    {
         let timeFormatter = DateComponentsFormatter()
         timeFormatter.unitsStyle = .abbreviated
         timeFormatter.zeroFormattingBehavior = .dropAll
         timeFormatter.allowedUnits = [.hour, .minute, .second]
-        return "Time Interval Trigger: \(timeFormatter.string(from: intervalTrigger.timeInterval ?? 0.0))"
-    } else if let locationTrigger = trigger as? UNLocationNotificationTrigger {
+        return
+            "Time Interval Trigger: \(String(describing: timeFormatter.string(from: intervalTrigger.timeInterval)))"
+    } else if trigger is UNLocationNotificationTrigger {
         return "Location Trigger"
     } else {
         return "Unknown Trigger"
     }
 }
 
-/**
- * Returns all pending notifications
- */
+/// Returns all pending notifications
 func listAllNotifications() async -> [UNNotificationRequest] {
     return await withCheckedContinuation { continuation in
-        UNUserNotificationCenter.current().getPendingNotificationRequests { pendingNotifications in
+        UNUserNotificationCenter.current().getPendingNotificationRequests {
+            pendingNotifications in
             continuation.resume(returning: pendingNotifications)
         }
     }
 }
 
-
 @available(iOS 15.0, *)
 struct NotificationsView: View {
-    
+
     @State private var pendingNotificationRequests: [UNNotificationRequest] = []
-    
+
     var body: some View {
         VStack {
-            if (pendingNotificationRequests.count == 0) {
+            if pendingNotificationRequests.count == 0 {
                 Spacer()
-                HStack() {
+                HStack {
                     Spacer()
                     Text("No pending notifications.")
                     Spacer()
@@ -68,9 +67,11 @@ struct NotificationsView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         if let trigger = request.trigger {
-                            Text("Trigger: \(triggerDescriptionFormatter(trigger))")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                            Text(
+                                "Trigger: \(triggerDescriptionFormatter(trigger))"
+                            )
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         }
                     }
                 }

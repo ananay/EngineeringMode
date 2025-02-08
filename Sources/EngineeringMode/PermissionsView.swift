@@ -4,193 +4,45 @@
 //  Created by Ananay Arora on 6/29/23.
 //
 
-import SwiftUI
 import AVFoundation
-import Photos
+import AuthenticationServices
 import Contacts
+import CoreBluetooth
 import CoreLocation
-import EventKit
 import CoreMotion
+import CoreTelephony
+import EventKit
 import HealthKit
 import HomeKit
-import CoreBluetooth
-import CoreTelephony
 import Intents
-import Speech
-import AuthenticationServices
 import MediaPlayer
+import Photos
+import Speech
+import SwiftUI
 
-struct PermissionStatus: Identifiable {
-    let id = UUID()
-    let title: String
-    let status: String
+protocol AuthorizationStatus {
+    var localizedStatus: String { get }
 }
 
-struct PermissionsView: View {
-    let permissions: [PermissionStatus] = [
-        PermissionStatus(title: "Camera", status: AVCaptureDevice.authorizationStatus(for: .video).localizedStatus),
-        PermissionStatus(title: "Microphone", status: AVCaptureDevice.authorizationStatus(for: .audio).localizedStatus),
-        PermissionStatus(title: "Photo Library", status: PHPhotoLibrary.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "Contacts", status: CNContactStore.authorizationStatus(for: .contacts).localizedStatus),
-        PermissionStatus(title: "Location", status: CLLocationManager.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "Calendar", status: EKEventStore.authorizationStatus(for: .event).localizedStatus),
-        PermissionStatus(title: "Reminders", status: EKEventStore.authorizationStatus(for: .reminder).localizedStatus),
-        PermissionStatus(title: "Motion & Fitness", status: CMMotionActivityManager.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "Health", status: HKHealthStore.isHealthDataAvailable() ? HKHealthStore().authorizationStatus(for: .activitySummaryType()).localizedStatus : "Unavailable"),
-        //        PermissionStatus(title: "HomeKit", status: HMHomeManager().authorizationStatus.localizedStatus),
-        PermissionStatus(title: "Bluetooth", status: CBPeripheralManager.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "Cellular Data", status: CTCellularData().restrictedState.localizedStatus),
-        PermissionStatus(title: "Push Notifications", status: "N/A"),
-        PermissionStatus(title: "Siri & Dictation", status: SFSpeechRecognizer.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "Face ID or Touch ID", status: "N/A"),
-        PermissionStatus(title: "Speech Recognition", status: SFSpeechRecognizer.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "CalDAV & CardDAV", status: "N/A"),
-        PermissionStatus(title: "Music Library", status: MPMediaLibrary.authorizationStatus().localizedStatus),
-        PermissionStatus(title: "Apple Music", status: "N/A"),
-        PermissionStatus(title: "Home & Lock Screen Widgets", status: "N/A")
-    ]
-    
-    var body: some View {
-        List(permissions) { permission in
-            HStack {
-                Text(permission.title)
-                Spacer()
-                Text(permission.status)
-                    .foregroundColor(permission.status == "Granted" ? .green : .red)
-            }
-        }
-        .listStyle(InsetGroupedListStyle())
-        .navigationTitle("Permissions")
-    }
-}
-
-extension AVAuthorizationStatus {
+extension AuthorizationStatus {
     var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
+//        let mirror = Mirror(reflecting: self)
+        let label = String(describing: self)
 
-extension PHAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
+        switch label {
+        case "authorized", "allowedAlways", "sharingAuthorized",
+            "notRestricted", "authorizedAlways",
+            "authorizedWhenInUse":
             return "Granted"
-        case .denied:
+        case "denied", "sharingDenied":
             return "Denied"
-        case .restricted:
+        case "restricted":
             return "Restricted"
-        case .notDetermined:
+        case "notDetermined":
             return "Not Determined"
-        case .limited:
+        case "limited":
             return "Limited"
-        default:
-            return "Unknown"
-        }
-    }
-}
-
-extension CNAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
-
-extension CLAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorizedAlways, .authorizedWhenInUse:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
-
-extension EKAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
-
-extension CMAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
-
-extension HKAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .sharingAuthorized:
-            return "Granted"
-        case .sharingDenied:
-            return "Denied"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
-
-extension HMHomeManagerAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .restricted:
-            return "Restricted"
-        case .determined:
+        case "determined":
             return "Determined"
         default:
             return "Unknown"
@@ -198,66 +50,153 @@ extension HMHomeManagerAuthorizationStatus {
     }
 }
 
-extension CBPeripheralManagerAuthorizationStatus {
+// Conform all status types to AuthorizationStatus
+extension AVAuthorizationStatus: AuthorizationStatus {}
+extension PHAuthorizationStatus: AuthorizationStatus {}
+extension CNAuthorizationStatus: AuthorizationStatus {}
+extension CLAuthorizationStatus: AuthorizationStatus {}
+extension EKAuthorizationStatus: AuthorizationStatus {}
+extension CMAuthorizationStatus: AuthorizationStatus {}
+extension HKAuthorizationStatus: AuthorizationStatus {}
+extension CBManagerAuthorization: AuthorizationStatus {}
+extension CTCellularDataRestrictedState: AuthorizationStatus {}
+extension SFSpeechRecognizerAuthorizationStatus: AuthorizationStatus {}
+extension MPMediaLibraryAuthorizationStatus: AuthorizationStatus {}
+
+// Special case for HomeKit due to iOS version check
+extension HMHomeManagerAuthorizationStatus: AuthorizationStatus {
     var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
+        if #available(iOS 16.0, *) {
+            switch self {
+            case .authorized:
+                return "Granted"
+            case .restricted:
+                return "Restricted"
+            case .determined:
+                return "Determined"
+            default:
+                return "Unknown"
+            }
+        } else {
             return "Unknown"
         }
     }
 }
 
-extension CTCellularDataRestrictedState {
-    var localizedStatus: String {
-        switch self {
-        case .restricted:
-            return "Restricted"
-        case .notRestricted:
-            return "Not Restricted"
-        default:
-            return "Unknown"
+struct PermissionStatus: Identifiable {
+    let id = UUID()
+    let title: String
+    let status: String
+}
+
+class HomeKitPermissionManager: NSObject, HMHomeManagerDelegate,
+    ObservableObject
+{
+    @Published var authorizationStatus: HMHomeManagerAuthorizationStatus =
+        .determined
+    private let homeManager = HMHomeManager()
+
+    override init() {
+        super.init()
+        homeManager.delegate = self
+    }
+
+    func homeManagerDidUpdateAuthorization(_ manager: HMHomeManager) {
+        if #available(iOS 16.0, *) {
+            authorizationStatus = manager.authorizationStatus
         }
     }
 }
 
-extension SFSpeechRecognizerAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
-        }
-    }
-}
+struct PermissionsView: View {
+    @StateObject private var homeKitManager = HomeKitPermissionManager()
 
-extension MPMediaLibraryAuthorizationStatus {
-    var localizedStatus: String {
-        switch self {
-        case .authorized:
-            return "Granted"
-        case .denied:
-            return "Denied"
-        case .restricted:
-            return "Restricted"
-        case .notDetermined:
-            return "Not Determined"
-        default:
-            return "Unknown"
+    var permissions: [PermissionStatus] {
+        [
+            PermissionStatus(
+                title: "Camera",
+                status: AVCaptureDevice.authorizationStatus(for: .video)
+                    .localizedStatus),
+            PermissionStatus(
+                title: "Microphone",
+                status: AVCaptureDevice.authorizationStatus(for: .audio)
+                    .localizedStatus),
+            PermissionStatus(
+                title: "Photo Library",
+                status: PHPhotoLibrary.authorizationStatus().localizedStatus),
+            PermissionStatus(
+                title: "Contacts",
+                status: CNContactStore.authorizationStatus(for: .contacts)
+                    .localizedStatus),
+            PermissionStatus(
+                title: "Location",
+                status: CLLocationManager().authorizationStatus.localizedStatus),
+            PermissionStatus(
+                title: "Calendar",
+                status: EKEventStore.authorizationStatus(for: .event)
+                    .localizedStatus),
+            PermissionStatus(
+                title: "Reminders",
+                status: EKEventStore.authorizationStatus(for: .reminder)
+                    .localizedStatus),
+            PermissionStatus(
+                title: "Motion & Fitness",
+                status: CMMotionActivityManager.authorizationStatus()
+                    .localizedStatus),
+            PermissionStatus(
+                title: "Health",
+                status: HKHealthStore.isHealthDataAvailable()
+                    ? HKHealthStore().authorizationStatus(
+                        for: .activitySummaryType()
+                    ).localizedStatus
+                    : "Unavailable"),
+            PermissionStatus(
+                title: "HomeKit",
+                status: {
+                    if #available(iOS 16.0, *) {
+                        return HMHomeManager().authorizationStatus
+                            .localizedStatus
+                    } else {
+                        return "Unavailable on iOS < 16.0"
+                    }
+                }()),
+            PermissionStatus(
+                title: "Bluetooth",
+                status: CBManager.authorization.localizedStatus),
+            PermissionStatus(
+                title: "Cellular Data",
+                status: CTCellularData().restrictedState.localizedStatus),
+            PermissionStatus(title: "Push Notifications", status: "N/A"),
+            PermissionStatus(
+                title: "Siri & Dictation",
+                status: SFSpeechRecognizer.authorizationStatus().localizedStatus
+            ),
+            PermissionStatus(title: "Face ID or Touch ID", status: "N/A"),
+            PermissionStatus(
+                title: "Speech Recognition",
+                status: SFSpeechRecognizer.authorizationStatus().localizedStatus
+            ),
+            PermissionStatus(title: "CalDAV & CardDAV", status: "N/A"),
+            PermissionStatus(
+                title: "Music Library",
+                status: MPMediaLibrary.authorizationStatus().localizedStatus),
+            PermissionStatus(title: "Apple Music", status: "N/A"),
+            PermissionStatus(
+                title: "Home & Lock Screen Widgets", status: "N/A"),
+        ]
+    }
+
+    var body: some View {
+        List(permissions) { permission in
+            HStack {
+                Text(permission.title)
+                Spacer()
+                Text(permission.status)
+                    .foregroundColor(
+                        permission.status == "Granted" ? .green : .red)
+            }
         }
+        .listStyle(InsetGroupedListStyle())
+        .navigationTitle("Permissions")
     }
 }
