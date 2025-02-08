@@ -21,32 +21,67 @@ import Speech
 import SwiftUI
 import UserNotifications
 
-protocol AuthorizationStatus {
-    var localizedStatus: String { get }
-}
+enum PermissionStatusInfo: String {
+    case granted = "Granted"
+    case denied = "Denied"
+    case restricted = "Restricted"
+    case notDetermined = "Not Determined"
+    case limited = "Limited"
+    case determined = "Determined"
+    case provisional = "Provisional"
+    case ephemeral = "Ephemeral"
+    case unavailable = "Unavailable"
+    case unavailableOldOS = "Unavailable on iOS < 16.0"
+    case notApplicable = "N/A"
+    case unknown = "Unknown"
 
-extension AuthorizationStatus {
-    var localizedStatus: String {
-        let label = String(describing: self)
+    var color: Color {
+        switch self {
+        case .granted:
+            return .green
+        case .limited, .determined, .provisional:
+            return .yellow
+        case .notApplicable, .unavailable, .unavailableOldOS:
+            return .primary
+        default:
+            return .red
+        }
+    }
 
-        switch label {
+    static func fromRawStatus(_ status: String) -> PermissionStatusInfo {
+        switch status {
         case "authorized", "allowedAlways", "sharingAuthorized",
             "notRestricted", "authorizedAlways",
             "authorizedWhenInUse":
-            return "Granted"
+            return .granted
         case "denied", "sharingDenied":
-            return "Denied"
+            return .denied
         case "restricted":
-            return "Restricted"
+            return .restricted
         case "notDetermined":
-            return "Not Determined"
+            return .notDetermined
         case "limited":
-            return "Limited"
+            return .limited
         case "determined":
-            return "Determined"
+            return .determined
+        case "provisional":
+            return .provisional
+        case "ephemeral":
+            return .ephemeral
         default:
-            return "Unknown"
+            return .unknown
         }
+    }
+}
+
+protocol AuthorizationStatus {
+    var localizedStatus: PermissionStatusInfo { get }
+}
+
+extension AuthorizationStatus {
+    var localizedStatus: PermissionStatusInfo {
+        let label = String(describing: self)
+        return PermissionStatusInfo.fromRawStatus(label)
     }
 }
 
@@ -66,20 +101,20 @@ extension UNAuthorizationStatus: AuthorizationStatus {}
 
 // Special case for HomeKit due to iOS version check
 extension HMHomeManagerAuthorizationStatus: AuthorizationStatus {
-    var localizedStatus: String {
+    var localizedStatus: PermissionStatusInfo {
         if #available(iOS 16.0, *) {
             switch self {
             case .authorized:
-                return "Granted"
+                return .granted
             case .restricted:
-                return "Restricted"
+                return .restricted
             case .determined:
-                return "Determined"
+                return .determined
             default:
-                return "Unknown"
+                return .unknown
             }
         } else {
-            return "Unknown"
+            return .unavailableOldOS
         }
     }
 }
@@ -87,7 +122,7 @@ extension HMHomeManagerAuthorizationStatus: AuthorizationStatus {
 struct PermissionStatus: Identifiable {
     let id = UUID()
     let title: String
-    let status: String
+    let status: PermissionStatusInfo
 }
 
 class HomeKitPermissionManager: NSObject, HMHomeManagerDelegate,
@@ -113,14 +148,47 @@ class NotificationPermissionManager: ObservableObject {
     @Published var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     init() {
-        updateAuthorizationStatus()
+        Task {
+            await updateAuthorizationStatus()
+        }
     }
 
-    func updateAuthorizationStatus() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async {
-                self.authorizationStatus = settings.authorizationStatus
-            }
+    func requestAuthorization() async {
+        let center = UNUserNotificationCenter.current()
+        do {
+            try await center.requestAuthorization(options: [
+                .alert, .sound, .badge, .provisional,
+            ])
+            // Update status after requesting authorization
+            await updateAuthorizationStatus()
+        } catch {
+            print("Error requesting notification authorization: \(error)")
+        }
+    }
+
+    func updateAuthorizationStatus() async {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        await MainActor.run {
+            self.authorizationStatus = settings.authorizationStatus
+        }
+    }
+
+    // Helper computed property to get a user-friendly status string
+    var localizedAuthorizationStatus: PermissionStatusInfo {
+        switch authorizationStatus {
+        case .authorized:
+            return .granted
+        case .denied:
+            return .denied
+        case .notDetermined:
+            return .notDetermined
+        case .provisional:
+            return .provisional
+        case .ephemeral:
+            return .ephemeral
+        @unknown default:
+            return .unknown
         }
     }
 }
@@ -138,7 +206,7 @@ struct PermissionsView: View {
                     .localizedStatus),
             PermissionStatus(
                 title: "Push Notifications",
-                status: notificationManager.authorizationStatus.localizedStatus),
+                status: notificationManager.localizedAuthorizationStatus),
             PermissionStatus(
                 title: "Microphone",
                 status: AVCaptureDevice.authorizationStatus(for: .audio)
@@ -171,7 +239,7 @@ struct PermissionsView: View {
                     ? HKHealthStore().authorizationStatus(
                         for: .activitySummaryType()
                     ).localizedStatus
-                    : "Unavailable"),
+                    : .unavailable),
             PermissionStatus(
                 title: "HomeKit",
                 status: {
@@ -179,7 +247,7 @@ struct PermissionsView: View {
                         return HMHomeManager().authorizationStatus
                             .localizedStatus
                     } else {
-                        return "Unavailable on iOS < 16.0"
+                        return .unavailableOldOS
                     }
                 }()),
             PermissionStatus(
@@ -192,18 +260,19 @@ struct PermissionsView: View {
                 title: "Siri & Dictation",
                 status: SFSpeechRecognizer.authorizationStatus().localizedStatus
             ),
-            PermissionStatus(title: "Face ID or Touch ID", status: "N/A"),
+            PermissionStatus(
+                title: "Face ID or Touch ID", status: .notApplicable),
             PermissionStatus(
                 title: "Speech Recognition",
                 status: SFSpeechRecognizer.authorizationStatus().localizedStatus
             ),
-            PermissionStatus(title: "CalDAV & CardDAV", status: "N/A"),
+            PermissionStatus(title: "CalDAV & CardDAV", status: .notApplicable),
             PermissionStatus(
                 title: "Music Library",
                 status: MPMediaLibrary.authorizationStatus().localizedStatus),
-            PermissionStatus(title: "Apple Music", status: "N/A"),
+            PermissionStatus(title: "Apple Music", status: .notApplicable),
             PermissionStatus(
-                title: "Home & Lock Screen Widgets", status: "N/A"),
+                title: "Home & Lock Screen Widgets", status: .notApplicable),
         ]
     }
 
@@ -212,9 +281,8 @@ struct PermissionsView: View {
             HStack {
                 Text(permission.title)
                 Spacer()
-                Text(permission.status)
-                    .foregroundColor(
-                        permission.status == "Granted" ? .green : .red)
+                Text(permission.status.rawValue)
+                    .foregroundColor(permission.status.color)
             }
         }
         .listStyle(InsetGroupedListStyle())
