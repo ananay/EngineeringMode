@@ -6,32 +6,66 @@
 
 import SwiftUI
 
+struct UserDefaultItem: Identifiable {
+    let id = UUID()
+    let key: String
+    let value: Any
+}
+
 @available(iOS 15.0, *)
 struct UserDefaultsView: View {
-    @State private var userDefaultsData: [(key: String, value: Any)] = []
-    
+    @State private var userDefaultsData: [UserDefaultItem] = []
+    @State private var expandedItems: Set<UUID> = []
+
     var body: some View {
-        List(userDefaultsData, id: \.key) { item in
-            VStack(alignment: .leading) {
-                Text(item.key)
-                    .font(.headline)
-                Text(String(describing: item.value))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+        List {
+            ForEach(userDefaultsData) { item in
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { expandedItems.contains(item.id) },
+                        set: { isExpanded in
+                            if isExpanded {
+                                expandedItems.insert(item.id)
+                            } else {
+                                expandedItems.remove(item.id)
+                            }
+                        }
+                    )
+                ) {
+                    Text(String(describing: item.value))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.leading)
+                } label: {
+                    Text(item.key)
+                        .font(.headline)
+                }
             }
         }
         .onAppear {
             fetchUserDefaultsData()
         }
     }
-    
+
     /**
      * Fetches the user defaults and adds it to the State array.
      */
     func fetchUserDefaultsData() {
-        userDefaultsData = []
-        for (key, value) in UserDefaults.standard.dictionaryRepresentation() {
-            userDefaultsData.append((key: key, value: value))
-        }
+        userDefaultsData = UserDefaults.standard.dictionaryRepresentation()
+            .map { UserDefaultItem(key: $0.key, value: $0.value) }
+            .sorted { $0.key < $1.key }
+    }
+}
+
+#Preview {
+    if #available(iOS 15.0, *) {
+        UserDefaultsView()
+            .onAppear {
+                let defaults = UserDefaults.standard
+                defaults.set("test@example.com", forKey: "userEmail")
+                defaults.set(true, forKey: "isLoggedIn")
+            }
+    } else {
+        Text("UserDefaultsView is not available on this platform.")
     }
 }
