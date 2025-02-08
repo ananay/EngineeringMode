@@ -19,6 +19,7 @@ import MediaPlayer
 import Photos
 import Speech
 import SwiftUI
+import UserNotifications
 
 protocol AuthorizationStatus {
     var localizedStatus: String { get }
@@ -26,7 +27,6 @@ protocol AuthorizationStatus {
 
 extension AuthorizationStatus {
     var localizedStatus: String {
-//        let mirror = Mirror(reflecting: self)
         let label = String(describing: self)
 
         switch label {
@@ -62,6 +62,7 @@ extension CBManagerAuthorization: AuthorizationStatus {}
 extension CTCellularDataRestrictedState: AuthorizationStatus {}
 extension SFSpeechRecognizerAuthorizationStatus: AuthorizationStatus {}
 extension MPMediaLibraryAuthorizationStatus: AuthorizationStatus {}
+extension UNAuthorizationStatus: AuthorizationStatus {}
 
 // Special case for HomeKit due to iOS version check
 extension HMHomeManagerAuthorizationStatus: AuthorizationStatus {
@@ -108,8 +109,26 @@ class HomeKitPermissionManager: NSObject, HMHomeManagerDelegate,
     }
 }
 
+class NotificationPermissionManager: ObservableObject {
+    @Published var authorizationStatus: UNAuthorizationStatus = .notDetermined
+
+    init() {
+        updateAuthorizationStatus()
+    }
+
+    func updateAuthorizationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                self.authorizationStatus = settings.authorizationStatus
+            }
+        }
+    }
+}
+
 struct PermissionsView: View {
     @StateObject private var homeKitManager = HomeKitPermissionManager()
+    @StateObject private var notificationManager =
+        NotificationPermissionManager()
 
     var permissions: [PermissionStatus] {
         [
@@ -117,6 +136,9 @@ struct PermissionsView: View {
                 title: "Camera",
                 status: AVCaptureDevice.authorizationStatus(for: .video)
                     .localizedStatus),
+            PermissionStatus(
+                title: "Push Notifications",
+                status: notificationManager.authorizationStatus.localizedStatus),
             PermissionStatus(
                 title: "Microphone",
                 status: AVCaptureDevice.authorizationStatus(for: .audio)
@@ -166,7 +188,6 @@ struct PermissionsView: View {
             PermissionStatus(
                 title: "Cellular Data",
                 status: CTCellularData().restrictedState.localizedStatus),
-            PermissionStatus(title: "Push Notifications", status: "N/A"),
             PermissionStatus(
                 title: "Siri & Dictation",
                 status: SFSpeechRecognizer.authorizationStatus().localizedStatus
