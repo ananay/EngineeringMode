@@ -68,8 +68,29 @@ class MetricsManager: NSObject, MXMetricManagerSubscriber {
         MXMetricManager.shared.add(self)
     }
 
+    /// Cleans up metric records older than seven days
+    func cleanupOldRecords() {
+        guard let context = modelContext else { return }
+
+        let sevenDaysAgo = Calendar.current.date(
+            byAdding: .day, value: -7, to: .now)!
+        let predicate = #Predicate<MetricRecord> { record in
+            record.timestamp < sevenDaysAgo
+        }
+
+        do {
+            try context.delete(model: MetricRecord.self, where: predicate)
+            try context.save()
+        } catch {
+            print("Failed to cleanup old records: \(error)")
+        }
+    }
+
     func didReceive(_ payloads: [MXMetricPayload]) {
         guard let context = modelContext else { return }
+
+        // Clean up old records before adding new ones
+        cleanupOldRecords()
 
         for payload in payloads {
             let metrics = MetricRecord(timestamp: payload.timeStampEnd)
